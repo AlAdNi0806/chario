@@ -1,5 +1,166 @@
 [
     {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "inputs": [],
+        "name": "ReentrancyGuardReentrantCall",
+        "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "charityId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "title",
+                "type": "string"
+            }
+        ],
+        "name": "CharityCreated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "charityId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "enum Chario.CharityStatus",
+                "name": "newStatus",
+                "type": "uint8"
+            }
+        ],
+        "name": "CharityStatusUpdated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "charityId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "donor",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "DonationReceived",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "charityId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "FundsWithdrawn",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "charityId",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "donor",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "RefundProcessed",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "string",
+                "name": "userId",
+                "type": "string"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "wallet",
+                "type": "address"
+            }
+        ],
+        "name": "WalletLinked",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_id",
+                "type": "uint256"
+            }
+        ],
+        "name": "cancelCharity",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "uint256",
@@ -7,7 +168,7 @@
                 "type": "uint256"
             }
         ],
-        "name": "Charities",
+        "name": "charities",
         "outputs": [
             {
                 "internalType": "address",
@@ -43,6 +204,16 @@
                 "internalType": "string",
                 "name": "image",
                 "type": "string"
+            },
+            {
+                "internalType": "enum Chario.CharityStatus",
+                "name": "status",
+                "type": "uint8"
+            },
+            {
+                "internalType": "bool",
+                "name": "fundsWithdrawn",
+                "type": "bool"
             }
         ],
         "stateMutability": "view",
@@ -106,8 +277,70 @@
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "getCharities",
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "donorContributions",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_id",
+                "type": "uint256"
+            }
+        ],
+        "name": "emergencyWithdraw",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "escrowBalance",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_id",
+                "type": "uint256"
+            }
+        ],
+        "name": "getCharity",
         "outputs": [
             {
                 "components": [
@@ -147,19 +380,43 @@
                         "type": "string"
                     },
                     {
-                        "internalType": "address[]",
-                        "name": "donators",
-                        "type": "address[]"
+                        "internalType": "enum Chario.CharityStatus",
+                        "name": "status",
+                        "type": "uint8"
                     },
                     {
-                        "internalType": "uint256[]",
-                        "name": "donations",
-                        "type": "uint256[]"
+                        "internalType": "bool",
+                        "name": "fundsWithdrawn",
+                        "type": "bool"
                     }
                 ],
-                "internalType": "struct Chario.Charity[]",
+                "internalType": "struct Chario.Charity",
                 "name": "",
-                "type": "tuple[]"
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_id",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "donor",
+                "type": "address"
+            }
+        ],
+        "name": "getDonorContribution",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -173,20 +430,69 @@
                 "type": "uint256"
             }
         ],
-        "name": "getDonators",
+        "name": "getEscrowBalance",
         "outputs": [
             {
-                "internalType": "address[]",
+                "internalType": "uint256",
                 "name": "",
-                "type": "address[]"
-            },
-            {
-                "internalType": "uint256[]",
-                "name": "",
-                "type": "uint256[]"
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "wallet",
+                "type": "address"
+            }
+        ],
+        "name": "getUserByWallet",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint8",
+                        "name": "verifiedLevel",
+                        "type": "uint8"
+                    },
+                    {
+                        "internalType": "uint256[]",
+                        "name": "badgeTokenIds",
+                        "type": "uint256[]"
+                    },
+                    {
+                        "internalType": "address[]",
+                        "name": "linkedWallets",
+                        "type": "address[]"
+                    }
+                ],
+                "internalType": "struct Chario.User",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "userId",
+                "type": "string"
+            },
+            {
+                "internalType": "address",
+                "name": "wallet",
+                "type": "address"
+            }
+        ],
+        "name": "linkWalletToUser",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -200,6 +506,114 @@
             }
         ],
         "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_id",
+                "type": "uint256"
+            }
+        ],
+        "name": "refundDonation",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "userId",
+                "type": "string"
+            },
+            {
+                "internalType": "uint8",
+                "name": "level",
+                "type": "uint8"
+            }
+        ],
+        "name": "setUserVerifiedLevel",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_id",
+                "type": "uint256"
+            }
+        ],
+        "name": "updateCharityStatus",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "name": "users",
+        "outputs": [
+            {
+                "internalType": "uint8",
+                "name": "verifiedLevel",
+                "type": "uint8"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "walletToUserId",
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_id",
+                "type": "uint256"
+            }
+        ],
+        "name": "withdrawFunds",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     }
 ]

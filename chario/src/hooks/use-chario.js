@@ -1,119 +1,340 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useCallback, useEffect } from 'react';
 import {
     useAccount,
     useReadContract,
     useWriteContract,
     useWaitForTransactionReceipt,
 } from "wagmi";
-import abi from "../abi/chario.json"; // Update to your contract's ABI
+import abi from "@/abi/chario.json"; // Update to your contract's ABI
+import { parseEther, formatEther } from 'viem';
+import { toast } from "sonner";
 
-const useCharities = () => {
-    const { address } = useAccount();
+const CHARIO_ABI = abi
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS
 
-    // Read all charities
-    const {
-        data: charities,
-        isLoading: getCharitiesLoading,
-        isError: getCharitiesError,
-        refetch: refetchCharities,
-    } = useReadContract({
-        address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS,
-        abi,
-        functionName: "getCharities",
+export const useChario = () => {
+    const { address, isConnected } = useAccount();
+    const [isLoading, setIsLoading] = useState(false);
+    const [pendingTxHash, setPendingTxHash] = useState(null);
+
+    // Write contract hook
+    const { writeContract, data: txHash, error: writeError, isPending: isWritePending } = useWriteContract();
+
+    // Wait for transaction receipt
+    const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+        hash: txHash,
     });
 
-    // Write contract for createCharity
-    const {
-        writeContract: writeCreateCharity,
-        data: createHash,
-        isPending: createPending,
-        isError: createError,
-    } = useWriteContract();
-
-    // Write contract for donateCharity
-    const {
-        writeContract: writeDonateCharity,
-        data: donateHash,
-        isPending: donatePending,
-        isError: donateError,
-    } = useWriteContract();
-
-    // Transaction receipt for createCharity
-    const {
-        isSuccess: createSuccess,
-        isLoading: createTxLoading,
-    } = useWaitForTransactionReceipt({
-        hash: createHash,
-        query: { enabled: Boolean(createHash) },
-    });
-
-    // Transaction receipt for donateCharity
-    const {
-        isSuccess: donateSuccess,
-        isLoading: donateTxLoading,
-    } = useWaitForTransactionReceipt({
-        hash: donateHash,
-        query: { enabled: Boolean(donateHash) },
-    });
-
-    // Create a charity
-    const createCharity = async (params) => {
-        try {
-            await writeCreateCharity({
-                address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS,
-                abi,
-                functionName: "createCharity", // TYPO HERE? Should match exactly
-                args: [
-                    params.owner,
-                    params.title,
-                    params.description,
-                    BigInt(params.target), // Convert to BigInt
-                    BigInt(params.deadline), // Convert to BigInt
-                    params.image,
-                ],
-            });
-        } catch (err) {
-            console.error("Failed to create charity", err);
-            throw err;
-        }
-    };
-
-    // Donate to a charity
-    const donateCharity = async (id, amount) => {
-        try {
-            await writeDonateCharity({
-                address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS,
-                abi,
-                functionName: "donateToCharity",
-                args: [id],
-                value: amount,
-            });
-        } catch (err) {
-            console.error("Failed to donate", err);
-        }
-    };
-
-    // Refetch charities after successful transactions
+    // Handle transaction completion
     useEffect(() => {
-        if (createSuccess || donateSuccess) {
-            refetchCharities();
+        if (txHash) {
+            console.log('Transaction Hash:', txHash);
         }
-    }, [createSuccess, donateSuccess]);
+        if (isConfirmed && pendingTxHash) {
+            toast.success('Transaction confirmed!');
+            setIsLoading(false);
+            setPendingTxHash(null);
+        }
+    }, [isConfirmed, pendingTxHash, txHash]); // Add txHash to dependency array
+
+    useEffect(() => {
+        if (writeError) {
+            console.error('Wagmi Write Error:', writeError);
+            toast.error('Transaction failed: ' + writeError.message);
+            setIsLoading(false);
+            setPendingTxHash(null);
+        }
+    }, [writeError]);
+
+    // Read contract data
+    const { data: numberOfCharities, refetch: refetchCharityCount } = useReadContract({
+        address: CONTRACT_ADDRESS,
+        abi: CHARIO_ABI,
+        functionName: 'numberOfCharities',
+    });
+
+    const { data: userData, refetch: refetchUserData } = useReadContract({
+        address: CONTRACT_ADDRESS,
+        abi: CHARIO_ABI,
+        functionName: 'getUserByWallet',
+        args: [address],
+        query: {
+            enabled: !!address,
+        },
+    });
+
+    // Helper function to execute contract writes
+    const executeWrite = useCallback(async (functionName, args, value, successMessage) => {
+        if (!isConnected) {
+            toast.error('Please connect your wallet');
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            const hash = await writeContract({
+                address: CONTRACT_ADDRESS,
+                abi: CHARIO_ABI,
+                functionName: functionName,
+                args: args,
+                value: value,
+            });
+
+            setPendingTxHash(hash);
+            toast.success(successMessage || 'Transaction submitted');
+        } catch (error) {
+            console.error(`Error executing ${functionName}:`, error);
+            toast.error(error.message || 'Transaction failed');
+            setIsLoading(false);
+        }
+    }, [writeContract, isConnected]);
+
+    // Create Charity
+    const createCharity = useCallback(async (params) => {
+        const { owner, title, description, target, deadline, image } = params;
+
+        try {
+            const targetInWei = parseEther(target.toString());
+            await executeWrite(
+                'createCharity',
+                [owner, title, description, targetInWei, deadline, image],
+                undefined,
+                'Creating charity...'
+            );
+        } catch (error) {
+            console.error('Error creating charity:', error);
+            toast.error('Failed to create charity');
+        }
+    }, [executeWrite]);
+
+    // Donate to Charity
+    const donateToCharity = useCallback(async (charityId, amount) => {
+        try {
+            const amountInWei = parseEther(amount.toString());
+            await executeWrite(
+                'donateToCharity',
+                [charityId],
+                amountInWei,
+                'Processing donation...'
+            );
+        } catch (error) {
+            console.error('Error donating:', error);
+            toast.error('Failed to donate');
+        }
+    }, [executeWrite]);
+
+    // Withdraw Funds
+    const withdrawFunds = useCallback(async (charityId) => {
+        await executeWrite(
+            'withdrawFunds',
+            [charityId],
+            undefined,
+            'Withdrawing funds...'
+        );
+    }, [executeWrite]);
+
+    // Refund Donation
+    const refundDonation = useCallback(async (charityId) => {
+        await executeWrite(
+            'refundDonation',
+            [charityId],
+            undefined,
+            'Processing refund...'
+        );
+    }, [executeWrite]);
+
+    // Cancel Charity
+    const cancelCharity = useCallback(async (charityId) => {
+        await executeWrite(
+            'cancelCharity',
+            [charityId],
+            undefined,
+            'Cancelling charity...'
+        );
+    }, [executeWrite]);
+
+    // Update Charity Status
+    const updateCharityStatus = useCallback(async (charityId) => {
+        await executeWrite(
+            'updateCharityStatus',
+            [charityId],
+            undefined,
+            'Updating status...'
+        );
+    }, [executeWrite]);
+
+    const loading = isLoading || isWritePending || isConfirming;
 
     return {
-        address,
-        charities,
-        getCharitiesLoading,
-        getCharitiesError,
+        // Data
+        numberOfCharities,
+        userData,
+
+        // Actions
         createCharity,
-        donateCharity,
-        createLoading: createPending || createTxLoading,
-        donateLoading: donatePending || donateTxLoading,
-        createError,
-        donateError,
+        donateToCharity,
+        withdrawFunds,
+        refundDonation,
+        cancelCharity,
+        updateCharityStatus,
+
+        // Refetch functions
+        refetchCharityCount,
+        refetchUserData,
+
+        // State
+        loading,
+        isConnected,
+        address,
+        txHash,
+
+        // Utilities
+        formatEther,
+        parseEther,
     };
 };
 
-export { useCharities };
+// Hook for fetching multiple charities
+export const useCharities = (limit) => {
+    const [charities, setCharities] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const { data: numberOfCharities } = useReadContract({
+        address: CONTRACT_ADDRESS,
+        abi: CHARIO_ABI,
+        functionName: 'numberOfCharities',
+    });
+
+    const totalCharities = numberOfCharities ? Number(numberOfCharities) : 0;
+    const charityLimit = limit ? Math.min(limit, totalCharities) : totalCharities;
+
+    // Fetch all charities
+    useEffect(() => {
+        if (totalCharities > 0) {
+            setIsLoading(true);
+            const fetchCharities = async () => {
+                const charityPromises = [];
+
+                for (let i = 0; i < charityLimit; i++) {
+                    charityPromises.push(
+                        fetch(`/api/v1/charity/${i}`).then(res => res.json()) // You'll need to implement this API endpoint
+                    );
+                }
+
+                try {
+                    const results = await Promise.all(charityPromises);
+                    setCharities(results.map((charity, index) => ({ ...charity, id: index })));
+                } catch (error) {
+                    console.error('Error fetching charities:', error);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            fetchCharities();
+        }
+    }, [totalCharities, charityLimit]);
+
+    return {
+        charities,
+        isLoading,
+        totalCharities,
+    };
+};
+
+// Hook for a single charity
+export const useCharity = (charityId) => {
+    const { address } = useAccount();
+
+    const { data: charity, isLoading: isLoadingCharity, refetch: refetchCharity } = useReadContract({
+        address: CONTRACT_ADDRESS,
+        abi: CHARIO_ABI,
+        functionName: 'getCharity',
+        args: [charityId],
+    });
+
+    const { data: donorContribution, isLoading: isLoadingContribution, refetch: refetchContribution } = useReadContract({
+        address: CONTRACT_ADDRESS,
+        abi: CHARIO_ABI,
+        functionName: 'getDonorContribution',
+        args: [charityId, address],
+        query: {
+            enabled: !!address,
+        },
+    });
+
+    const { data: escrowBalance, isLoading: isLoadingEscrow, refetch: refetchEscrow } = useReadContract({
+        address: CONTRACT_ADDRESS,
+        abi: CHARIO_ABI,
+        functionName: 'getEscrowBalance',
+        args: [charityId],
+    });
+
+    const isLoading = isLoadingCharity || isLoadingContribution || isLoadingEscrow;
+    const isOwner = (charity?.owner === address);
+    const canRefund = donorContribution && donorContribution > 0n;
+
+    // Refetch all charity data
+    const refetchAll = useCallback(() => {
+        refetchCharity();
+        refetchContribution();
+        refetchEscrow();
+    }, [refetchCharity, refetchContribution, refetchEscrow]);
+
+    return {
+        charity,
+        donorContribution,
+        escrowBalance,
+        isLoading,
+        isOwner,
+        canRefund,
+        refetchAll,
+    };
+};
+
+// Utility hook for charity status
+export const useCharityStatus = (status) => {
+    const statusMap = {
+        0: 'Active',
+        1: 'Inactive',
+        2: 'Completed',
+        3: 'Cancelled'
+    };
+
+    const statusColors = {
+        0: 'green',
+        1: 'yellow',
+        2: 'blue',
+        3: 'red'
+    };
+
+    return {
+        statusText: statusMap[status] || 'Unknown',
+        statusColor: statusColors[status] || 'gray',
+        isActive: status === 0,
+        isCompleted: status === 2,
+        isCancelled: status === 3,
+        isInactive: status === 1,
+    };
+};
+
+// Utility hook for formatting dates
+export const useCharityDates = (deadline) => {
+    const deadlineDate = new Date(deadline * 1000);
+    const now = new Date();
+    const timeLeft = deadlineDate - now;
+
+    const isExpired = timeLeft <= 0;
+    const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
+
+    return {
+        deadlineDate,
+        isExpired,
+        daysLeft: isExpired ? 0 : daysLeft,
+        formattedDeadline: deadlineDate.toLocaleDateString(),
+        timeLeftText: isExpired ? 'Expired' : `${daysLeft} days left`,
+    };
+};

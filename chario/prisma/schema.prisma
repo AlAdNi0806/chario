@@ -126,7 +126,7 @@ model TwoFactor {
 
 enum CharityStatus {
   ACTIVE
-  INACTIVE
+  INACTIVE //change naming to failed deadline
   COMPLETED
   CANCELLED
 }
