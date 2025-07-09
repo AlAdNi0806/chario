@@ -34,12 +34,23 @@ function CreateCharityPage() {
 
     const watchForm = CreateCharityForm.watch();
 
-    useEffect(() => {
-        console.log(watchForm);
-    }, [watchForm]);
+    // useEffect(() => {
+    //     console.log("Current form values:", watchForm);
+
+    //     const result = createCharitySchema.safeParse(watchForm);
+
+    //     if (!result.success) {
+    //         // result.error is a ZodError object containing detailed errors
+    //         console.log("Validation errors:", result.error.format());
+    //     } else {
+    //         console.log("No validation errors");
+    //     }
+    // }, [watchForm]);
+
 
     async function onSubmit(data) {
         console.log(data);
+        console.log("____________making");
         await createCharity({
             owner: address,
             title: data.title,
@@ -53,7 +64,7 @@ function CreateCharityPage() {
 
     return (
         <div className="p-8 pt-10">
-            <p className='text-2xl font-semibold mb-1'>
+            <p className='text-2xl font-semibold mb-1 '>
                 Specify the file you want to analyze
             </p>
             <p className='text-muted-foreground  text-xs mb-8'>

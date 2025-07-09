@@ -2,8 +2,9 @@
 import React from 'react'
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
+import { cn } from '@/lib/utils';
 
-function CharityCardMd({ charity }) {
+function CharityCardMd({ charity, className }) {
     const [daysLeft, setDaysLeft] = React.useState(0);
 
     React.useEffect(() => {
@@ -13,7 +14,12 @@ function CharityCardMd({ charity }) {
     }, [charity.deadline]);
 
     return (
-        <div className='overflow-hidden relative min-w-96 max-w-96 min-h-[24rem] bg-card rounded-3xl ring-1 ring-card-foreground/10 transition-all duration-200 hover:ring-2 hover:ring-card-foreground/10 cursor-pointer flex flex-col'>
+        <div
+            className={cn(
+                'overflow-hidden relative min-w-96 max-w-96 min-h-[24rem] bg-card rounded-3xl ring-1 ring-card-foreground/10 transition-all duration-200 hover:ring-2 hover:ring-card-foreground/10 cursor-pointer flex flex-col',
+                className
+            )}
+        >
             <div className="relative p-1">
                 {charity?.image ? (
                     <img

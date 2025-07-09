@@ -12,8 +12,6 @@ import { Textarea } from '@/components/ui/textarea';
 function CreateCharityFormComponent({ form, onSubmit, className }) {
     return (
         <div className={className}>
-
-
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                     <FormField
@@ -21,7 +19,7 @@ function CreateCharityFormComponent({ form, onSubmit, className }) {
                         name="title"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Title*</FormLabel>
+                                <FormLabel>Title<span className="text-red-300 -ml-1">*</span></FormLabel>
                                 <FormControl>
                                     <Input
                                         placeholder='Title'
@@ -40,7 +38,7 @@ function CreateCharityFormComponent({ form, onSubmit, className }) {
                         name="description"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Description*</FormLabel>
+                                <FormLabel>Description<span className="text-red-300 -ml-1">*</span></FormLabel>
                                 <FormControl>
                                     <Textarea
                                         placeholder='Tell what your charity is about'
@@ -60,7 +58,7 @@ function CreateCharityFormComponent({ form, onSubmit, className }) {
                             name="target"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Target Amount (ETH)*</FormLabel>
+                                    <FormLabel>Target Amount (ETH)</FormLabel>
                                     <FormControl>
                                         <Input
                                             placeholder='0.1'
@@ -80,7 +78,7 @@ function CreateCharityFormComponent({ form, onSubmit, className }) {
                             name="deadline"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Deadline*</FormLabel>
+                                    <FormLabel>Deadline</FormLabel>
                                     <FormControl>
                                         <Input
                                             type={'date'}
@@ -101,7 +99,7 @@ function CreateCharityFormComponent({ form, onSubmit, className }) {
                         name="image"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Image</FormLabel>
+                                <FormLabel>Image<span className="text-red-300 -ml-1">*</span></FormLabel>
                                 <FormControl>
                                     <SingleImageUpload
                                         className='mt-2'
