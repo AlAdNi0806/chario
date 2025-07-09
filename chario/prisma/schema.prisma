@@ -1,0 +1,192 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model AnonymousUser {
+  id                  String  @id @default(cuid())
+  ipAddress           String?
+  amountSentInDollars String?
+
+  Donations Donation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id                  String   @id @default(cuid())
+  name                String
+  email               String
+  emailVerified       Boolean  @default(false)
+  image               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  twoFactorEnabled    Boolean  @default(false)
+  username            String?
+  verifiedLevel       Int      @default(0)
+  amountSentInDollars String?
+
+  Session   Session[]
+  Account   Account[]
+  TwoFactor TwoFactor[]
+
+  Charities Charity[]
+  Donations Donation[]
+  Badges    Badge[]
+  Wallets   Wallet[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Wallet {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet    String // Ethereum address
+  linkedAt  DateTime  @default(now())
+  revokedAt DateTime?
+
+  @@index([userId])
+  @@index([wallet])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id           String    @id @default(cuid())
+  accountId    String
+  providerId   String
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken  String?
+  refreshToken String?
+  idToken      String?
+  expiresAt    DateTime?
+  password     String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model TwoFactor {
+  id          String @id @default(cuid())
+  secret      String
+  backupCodes String
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("twoFactor")
+}
+
+enum CharityStatus {
+  ACTIVE
+  INACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model Charity {
+  id              String    @id @default(cuid())
+  ownerWallet     String
+  title           String
+  description     String
+  target          Decimal
+  deadline        DateTime
+  amountCollected Decimal
+  image           String
+
+  status CharityStatus
+
+  donations Donation[]
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@map("charity")
+}
+
+model Donation {
+  id           String  @id @default(cuid())
+  senderWallet String
+  amountEth    Decimal
+  amountUsd    Decimal
+  txHash       String  @unique
+
+  donorUserId          String? // nullable if donor is temporary user
+  donorUser            User?          @relation(fields: [donorUserId], references: [id])
+  donorAnonymousUserId String? // nullable if donor is registered user
+  donorAnonymousUser   AnonymousUser? @relation(fields: [donorAnonymousUserId], references: [id])
+  charityId            String
+  charity              Charity        @relation(fields: [charityId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([donorUserId])
+  @@index([donorAnonymousUserId])
+  @@index([charityId])
+  @@map("donation")
+}
+
+model Badge {
+  id          String  @id @default(cuid())
+  title       String
+  description String
+  image       String?
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@map("badge")
+}
