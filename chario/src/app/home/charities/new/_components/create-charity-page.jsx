@@ -11,6 +11,7 @@ import CharityCardMd from "@/components/md/charity-card-md";
 import { useEffect } from "react";
 import { useAccount } from "wagmi";
 import { useChario } from "@/hooks/use-chario";
+import { useSession } from "@/lib/auth-client";
 
 
 
@@ -20,6 +21,7 @@ function CreateCharityPage() {
     const router = useRouter();
     const { address } = useAccount();
     const { createCharity, loading } = useChario();
+    const { data: userData } = useSession();
 
     const CreateCharityForm = useForm({
         resolver: zodResolver(createCharitySchema),
@@ -49,17 +51,21 @@ function CreateCharityPage() {
 
 
     async function onSubmit(data) {
-        console.log(data);
-        console.log("____________making");
-        await createCharity({
+        const result = await createCharity({
             owner: address,
             title: data.title,
             description: data.description,
             target: data.target, // 2.5 ETH
             deadline: Math.floor(new Date(watchForm.deadline).getTime() / 1000),
-            image: `${process.env.NEXT_PUBLIC_IPFS_GATEWAY}/${watchForm.image.file_cid}`
+            image: `${process.env.NEXT_PUBLIC_IPFS_GATEWAY}/${watchForm.image.file_cid}`,
+            userId: userData.user.id
         });
-        toast.success("Charity created successfully");
+        if (result.error) {
+            toast.error(result.error);
+        } else {
+            toast.success("Charity created successfully \n Your charity will be visible on the home page shortly");
+            router.push('/home/charities')
+        }
     }
 
     return (
@@ -92,7 +98,7 @@ function CreateCharityPage() {
                         />
                     </div>
                     <div className='mt-6 text-muted-foreground text-sm'>
-                        <h3 className='font-medium text-white mb-2 font-semibold'>Preview Notes:</h3>
+                        <h3 className=' text-white mb-2 font-semibold'>Preview Notes:</h3>
                         <ul className='list-disc pl-5 space-y-1'>
                             <li>This is how your charity will appear to donors</li>
                             <li>Image will be cropped to square aspect ratio</li>

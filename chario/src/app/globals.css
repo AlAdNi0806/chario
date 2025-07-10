@@ -165,3 +165,21 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes pulse-fade {
+  0% {
+    transform: scale(0.25);
+    /* Corresponds roughly to h-1/w-1 from a h-4/w-4 base */
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    /* Corresponds to h-4/w-4 */
+    opacity: 0;
+  }
+}
+
+.animate-pulse-fade-out {
+  animation: pulse-fade 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

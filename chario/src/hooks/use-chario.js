@@ -395,8 +395,10 @@ export const useChario = () => {
     // Helper function to execute contract writes
     const executeWrite = useCallback(async (functionName, args, value, loadingMessage) => {
         if (!isConnected) {
-            toast.error('Please connect your wallet first.');
-            return;
+            // toast.error('Please connect your wallet first.');
+            return {
+                error: 'Please connect your wallet first.'
+            };
         }
         setIsLoading(true);
         toast.info(loadingMessage || 'Submitting transaction...');
@@ -412,6 +414,9 @@ export const useChario = () => {
         } catch (error) {
             // Error is handled by the useEffect hook for writeError
             console.error(`Error submitting ${functionName}:`, error);
+            return {
+                error: error.message
+            };
         }
     }, [isConnected, writeContractAsync]);
 
@@ -419,24 +424,27 @@ export const useChario = () => {
      * Creates a new charity campaign.
      */
     const createCharity = useCallback(async (params) => {
-        const { owner, title, description, target, deadline, image } = params;
-        const targetInWei = parseEther(target.toString());
-        await executeWrite(
+        const { owner, title, description, target, deadline, image, userId } = params;
+        // const targetInWei = parseEther(target.toString());
+        const result = await executeWrite(
             'createCharity',
-            [owner, title, description, targetInWei, deadline, image],
+            // [owner, title, description, targetInWei || 0, deadline || 0, image],
+            [owner, title, description, target, 0, image, userId],
             undefined,
             'Creating your charity...'
         );
+
+        return result;
     }, [executeWrite]);
 
     /**
      * Donates a specified amount to a charity.
      */
-    const donateToCharity = useCallback(async (charityId, amount) => {
+    const donateToCharity = useCallback(async (charityId, amount, userId) => {
         const amountInWei = parseEther(amount.toString());
         await executeWrite(
             'donateToCharity',
-            [charityId],
+            [charityId, userId],
             amountInWei,
             'Processing your donation...'
         );

@@ -3,6 +3,8 @@ import React from 'react'
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
+import Link from 'next/link';
 
 function CharityCardMd({ charity, className }) {
     const [daysLeft, setDaysLeft] = React.useState(0);
@@ -14,7 +16,8 @@ function CharityCardMd({ charity, className }) {
     }, [charity.deadline]);
 
     return (
-        <div
+        <Link
+            href={`/home/charities/${charity.id}`}
             className={cn(
                 'overflow-hidden relative min-w-96 max-w-96 min-h-[24rem] bg-card rounded-3xl ring-1 ring-card-foreground/10 transition-all duration-200 hover:ring-2 hover:ring-card-foreground/10 cursor-pointer flex flex-col',
                 className
@@ -22,7 +25,9 @@ function CharityCardMd({ charity, className }) {
         >
             <div className="relative p-1">
                 {charity?.image ? (
-                    <img
+                    <Image
+                        width={384}
+                        height={192}
                         src={charity.image}
                         alt={charity.title}
                         className="w-full h-48 object-cover rounded-t-3xl rounded-b-4xl"
@@ -60,7 +65,7 @@ function CharityCardMd({ charity, className }) {
                     </div>
                 </div>
             </div>
-        </div>
+        </Link>
     )
 }
 
