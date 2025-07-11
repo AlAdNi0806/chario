@@ -4,6 +4,7 @@ import CharityCardMd from '@/components/md/charity-card-md';
 import SearchBar from '@/components/md/search-bar';
 import { useCharities, useCharity, useCharityStatus, useChario } from '@/hooks/use-chario';
 import { createReconnectingEventSource } from '@/hooks/use-sse';
+import { authClient, useSession } from '@/lib/auth-client';
 import { maskId } from '@/lib/hashing';
 import { cn } from '@/lib/utils';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -16,6 +17,15 @@ function CharitiesPage({ charities: initialCharities }) {
     const [realtime, setRealtime] = useState(false);
     const currentSearchQuery = searchParams.get('search') || '';
     const [search, setSearch] = useState(currentSearchQuery);
+    const sessionData = useSession();
+
+    if (!sessionData?.session && !sessionData?.user) {
+        createAnonymousUser()
+    }
+
+    async function createAnonymousUser() {
+        const data = await authClient.signIn.anonymous()
+    }
 
     useEffect(() => {
         const sse = createReconnectingEventSource(`${process.env.NEXT_PUBLIC_SSE_URL}/sse/new-charities`, {
