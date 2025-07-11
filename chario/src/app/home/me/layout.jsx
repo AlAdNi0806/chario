@@ -10,7 +10,7 @@ async function Layout({ children }) {
     });
 
 
-    if (!sessionData?.session) {
+    if (!sessionData?.session || sessionData?.user?.email?.startsWith('temp-')) {
         return (
             <NotAuthenticated />
         )
