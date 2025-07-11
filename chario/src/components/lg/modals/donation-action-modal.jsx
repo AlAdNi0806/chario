@@ -94,7 +94,7 @@ function DonationActionModal() {
                         </Button>
                     </Link>
                     <Link
-                        href={`https://sepolia.etherscan.io/tx/${donation?.txHash}`}
+                        href={`https://sepolia.etherscan.io/tx/${donation?.txHash}#internal`}
                         target="_blank"
                         className="flex-1 flex items-center cursor-pointer"
                     >

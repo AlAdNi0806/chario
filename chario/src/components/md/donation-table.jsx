@@ -198,7 +198,7 @@ export const columns = [
                         {/* Add more actions, e.g., navigate to charity page */}
                         <Link
                             target='_blank'
-                            href={`https://sepolia.etherscan.io/tx/${donation?.txHash}`}
+                            href={`https://sepolia.etherscan.io/tx/${donation?.txHash}#internal`}
                             className='cursor-pointer'
                         >
                             <DropdownMenuItem

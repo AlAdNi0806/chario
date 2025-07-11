@@ -38,19 +38,19 @@ export default function AppSidebar() {
                         icon={<HandHelpingIcon size={20} />}
                     />
                 </Link>
-                <Link href={`/home/charities/${''}`}>
+                <Link href={`/home/me/charities`}>
                     <SidebarItem
                         label='My charities'
                         icon={<HeartHandshakeIcon size={20} />}
                     />
                 </Link>
-                <Link href={`/home/charities/me/donations`}>
+                <Link href={`/home/me/donations`}>
                     <SidebarItem
                         label='My donations'
                         icon={<HeartIcon size={20} />}
                     />
                 </Link>
-                <Link href={`/home/profile`}>
+                <Link href={`/home/me/profile`}>
                     <SidebarItem
                         label='My profile'
                         icon={<UserIcon size={20} />}

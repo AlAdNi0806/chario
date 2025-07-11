@@ -71,7 +71,7 @@ function CreateCharityPage() {
     return (
         <div className="p-2 md:p-6 lg:p-8 pt-10">
             <p className='text-2xl font-semibold mb-1 '>
-                Specify the file you want to analyze
+                Create a new charity
             </p>
             <p className='text-muted-foreground  text-xs mb-8'>
                 By uploading files, you confirm that you have the necessary rights to any content that you upload. Do not use content that infringes on others intellectual property or privacy rights.

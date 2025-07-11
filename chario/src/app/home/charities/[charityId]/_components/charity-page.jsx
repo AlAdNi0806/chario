@@ -33,7 +33,7 @@ function CharityPage({ charity: rawCharity }) {
     setDonations(newCharity.donations)
     setTotalCollected(newCharity.amountCollected)
 
-    const sse = createReconnectingEventSource(`http://localhost:3001/sse/charities/${newCharity.id}/donations`, {
+    const sse = createReconnectingEventSource(`${process.env.NEXT_PUBLIC_SSE_URL}/sse/charities/${newCharity.id}/donations`, {
 
       onOpen: () => console.log('Connected to SSE'),
 
@@ -144,9 +144,9 @@ function CharityPage({ charity: rawCharity }) {
               <QrCodeIcon />
             </Button> */}
           </div>
-          <p>
+          {/* <p>
             {charity?.ownerWallet}
-          </p>
+          </p> */}
           <p className='text-muted-foreground text-sm mb-8'>
             {charity?.description}
           </p>
@@ -171,6 +171,9 @@ function CharityPage({ charity: rawCharity }) {
               </div>
             </div>
           )}
+          <p className='text-muted-foreground text-sm mb-8 mt-4'>
+            <span className='text-accent-foreground font-semibold'>Owners wallet:</span> {charity?.ownerWallet}
+          </p>
         </div>
       </div>
     </div>

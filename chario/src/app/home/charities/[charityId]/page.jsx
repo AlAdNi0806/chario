@@ -6,8 +6,7 @@ import NotFound from '@/components/md/not-found'
 
 async function Page({ params }) {
 
-  const hashedCharityId = (await params).charityId
-  const charityId = unmaskId(hashedCharityId)
+  const charityId = (await params).charityId
 
   if (!charityId) {
     return (

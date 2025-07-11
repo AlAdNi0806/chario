@@ -17,9 +17,9 @@ function CharityCardMd({ charity, className }) {
 
     return (
         <Link
-            href={`/home/charities/${charity.id}`}
+            href={charity?.link ? charity.link : `/home/charities/${charity.id}`}
             className={cn(
-                'overflow-hidden relative min-w-96 max-w-96 min-h-[24rem] bg-card rounded-3xl ring-1 ring-card-foreground/10 transition-all duration-200 hover:ring-2 hover:ring-card-foreground/10 cursor-pointer flex flex-col',
+                'overflow-hidden relative min-w-96 max-w-96 min-h-[24rem] bg-muted dark:bg-card rounded-3xl ring-1 ring-card-foreground/10 transition-all duration-200 hover:ring-2 hover:ring-card-foreground/10 cursor-pointer flex flex-col',
                 className
             )}
         >
@@ -44,7 +44,7 @@ function CharityCardMd({ charity, className }) {
                 )}
             </div>
             <div className="p-4 pt-1 flex flex-col flex-grow">
-                <h3 className='text-xl font-semibold text-white mb-2 line-clamp-1'>{charity.title}</h3>
+                <h3 className='text-xl font-semibold text-accent-foreground mb-2 line-clamp-1'>{charity.title}</h3>
                 <p className='text-muted-foreground mb-6 line-clamp-4 text-sm'>{charity.description}</p>
                 {/* {(charity.target !== '0' || !charity?.id) ? ( */}
                 {(charity.target !== '0' && charity.target) ? (

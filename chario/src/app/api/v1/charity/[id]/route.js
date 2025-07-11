@@ -3,6 +3,9 @@ import { NextResponse } from 'next/server';
 import { createPublicClient, http, parseEther, formatEther } from 'viem';
 import { hardhat } from 'viem/chains'; // Or your specific chain, e.g., sepolia, arbitrumSepolia
 import abi from '@/abi/chario.json'; // Adjust path based on your project structure
+import { headers } from 'next/headers';
+import { auth } from '@/lib/auth';
+import { editCharitySchema } from '@/helpers/zod/charity-schema';
 
 // Load environment variables
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
@@ -84,5 +87,72 @@ export async function GET(request, { params }) {
             { error: `Failed to fetch charity data: ${error.message}` },
             { status: 500 }
         );
+    }
+}
+
+export async function POST(request, { params }) {
+    const { id } = await params; // Extract the dynamic 'id' from the URL
+
+    const { session } = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session) {
+        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    if (!id) {
+        return NextResponse.json({ error: 'Invalid charity ID' }, { status: 400 });
+    }
+
+    const data = await request.json();
+    console.log("Data:", data);
+    const { title, description, target, deadline, image } = data;
+    const errors = editCharitySchema.safeParse({
+        title: title,
+        description: description,
+        target: target,
+        deadline: deadline,
+        image: image,
+    });
+
+    console.log("great", JSON.stringify(errors));
+    if (!errors.success) {
+        return NextResponse.json({ error: errors.error.format() }, { status: 400 });
+    }
+
+    try {
+
+        let newImage = image.file_path;
+        if (!newImage.includes(process.env.NEXT_PUBLIC_IPFS_GATEWAY)) {
+            newImage = `${process.env.NEXT_PUBLIC_IPFS_GATEWAY}/${image.file_cid}`
+        }
+
+        let deadlineDate = null
+        if (deadline?.length > 0) {
+            deadlineDate = new Date(deadline);
+        }
+
+        const charity = await prisma.charity.update({
+            where: { id: id },
+            data: {
+                title: title,
+                description: description,
+                target: parseFloat(target),
+                deadline: deadlineDate,
+                image: newImage,
+            },
+        });
+
+        console.log('Charity updated:', charity);
+        if (!charity) {
+            return NextResponse.json({ error: 'Failed to update charity' }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true }, { status: 200 });
+
+    } catch (error) {
+        console.error('Error editing charity:', error);
+        return NextResponse.json({ error: 'Failed to edit charity' }, { status: 500 });
     }
 }

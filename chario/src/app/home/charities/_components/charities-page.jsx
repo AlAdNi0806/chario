@@ -6,19 +6,27 @@ import { useCharities, useCharity, useCharityStatus, useChario } from '@/hooks/u
 import { createReconnectingEventSource } from '@/hooks/use-sse';
 import { maskId } from '@/lib/hashing';
 import { cn } from '@/lib/utils';
+import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react'
 
 function CharitiesPage({ charities: initialCharities }) {
+    const searchParams = useSearchParams();
+    const router = useRouter()
     const [charities, setCharities] = useState(initialCharities);
     const [realtime, setRealtime] = useState(false);
+    const currentSearchQuery = searchParams.get('search') || '';
+    const [search, setSearch] = useState(currentSearchQuery);
 
     useEffect(() => {
-        const sse = createReconnectingEventSource('http://localhost:3001/sse/new-charities', {
+        const sse = createReconnectingEventSource(`${process.env.NEXT_PUBLIC_SSE_URL}/sse/new-charities`, {
             onOpen: () => console.log('Connected to SSE'),
             onMessage: (e) => console.log('Message:', e.data),
             onError: (e) => console.error('Error:', e),
             onEvent: {
                 'new-charity': (e) => {
+                    if (currentSearchQuery.length > 0) {
+                        router.refresh()
+                    }
                     const data = JSON.parse(e.data)
                     console.log('New charity event:', data.charity);
                     setCharities((prevCharities) => [data.charity, ...prevCharities])
@@ -32,33 +40,30 @@ function CharitiesPage({ charities: initialCharities }) {
         }
     }, [])
 
+    useEffect(() => {
+        setCharities(initialCharities);
+    }, [initialCharities]);
+
+    useEffect(() => {
+        setSearch(currentSearchQuery);
+    }, [currentSearchQuery]);
+
+    function handleSearch(e) {
+        e.preventDefault();
+
+        router.push(`/home/charities?search=${encodeURIComponent(search)}`);
+    }
+
     return (
         <div className='w-full h-full p-8 gap-8 flex flex-col items-center relative overflow-x-hidden '>
-            {/* <div className='absolute top-13 left-6  bg-red-500'>
-                <div className='relative'>
-                    <div
-                        className={cn(
-                            'absolute bg-black bg-opacity-50 z-10 h-2 w-2 rounded-full',
-                            realtime ? 'bg-emerald-500' : 'bg-yellow-500'
-                        )}
-                    />
-                    <div
-                        className={cn(
-                            // Base size for the animation (the max size it will reach)
-                            'absolute bg-black bg-opacity-50 z-0 h-6 w-6 rounded-full',
-                            // Apply the animation class
-                            'animate-pulse-fade-out',
-                            // Adjust initial positioning if needed due to h-4/w-4 base
-                            '-top-2 -left-2', // This positioning might need slight adjustment based on your h-4/w-4
-                            realtime ? 'bg-emerald-500' : 'bg-yellow-500'
-                        )}
-                    />
-                </div>
-            </div> */}
-            <SearchBar />
+            <SearchBar
+                search={search}
+                setSearch={setSearch}
+                submitSearch={handleSearch}
+            />
             <div className='max-w-[1200px] w-full flex flex-col justify-center mx-auto'>
-                <div className='flex gap-4 mb-6'>
-                    <h2 className='text-muted-foreground'>Active Charities ({charities?.length} total)</h2>
+                <div className='flex gap-2 mb-2'>
+                    <h2 className='text-muted-foreground'>{currentSearchQuery?.length > 0 ? `Search results for "${currentSearchQuery}"` : 'Active Charities'} ({charities?.length} total)</h2>
                     <div className='relative mt-1'>
                         <div
                             className={cn(
@@ -80,7 +85,7 @@ function CharitiesPage({ charities: initialCharities }) {
                     {isConnected ? "SSE Connected" : "Connecting..."}
                 </div> */}
                 <div className='flex flex-wrap justify-center gap-6 mt-4'>
-                    {charities.map(charity => (
+                    {charities?.map(charity => (
                         <CharityCard key={charity.id} charityId={charity.id} charity={charity} />
                     ))}
                 </div>
@@ -107,7 +112,7 @@ function CharityCard({ charityId, charity }) {
         <CharityCardMd
             className='self-start'
             charity={{
-                id: maskId(charityId),
+                id: charityId,
                 title: charity?.title,
                 description: charity?.description,
                 target: charity?.target || '0',
