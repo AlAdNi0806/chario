@@ -19,14 +19,6 @@ function CharitiesPage({ charities: initialCharities }) {
     const [search, setSearch] = useState(currentSearchQuery);
     const sessionData = useSession();
 
-    if (!sessionData?.session && !sessionData?.user) {
-        createAnonymousUser()
-    }
-
-    async function createAnonymousUser() {
-        const data = await authClient.signIn.anonymous()
-    }
-
     useEffect(() => {
         const sse = createReconnectingEventSource(`${process.env.NEXT_PUBLIC_SSE_URL}/sse/new-charities`, {
             onOpen: () => console.log('Connected to SSE'),

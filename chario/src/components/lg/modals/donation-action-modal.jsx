@@ -71,9 +71,9 @@ function DonationActionModal() {
                         <span className='text-md text-accent-foreground font-semibold'>Transaction hash:</span>  {`${donation?.txHash.substring(0, 8)}...${donation?.txHash.substring(donation?.txHash.length - 6, donation?.txHash.length)}`}
                         <button className='ml-2 text-xs text-muted-foreground cursor-pointer focus-visible:ring-0 focus-visible:outline-none outline-non focus:outline-none'>
                             {copied ? (
-                                <CheckIcon size={14}/>
+                                <CheckIcon size={14} />
                             ) : (
-                                <Copy size={14}/>
+                                <Copy size={14} />
                             )}
                         </button>
                     </div>
@@ -84,7 +84,8 @@ function DonationActionModal() {
                 <div className="flex gap-4 items-center w-full">
                     <Link
                         href={`/home/users/${donation?.donorUser?.id}`}
-                         className="flex-1 flex items-center cursor-pointer"
+                        className="flex-1 flex items-center cursor-pointer"
+                        onClick={() => onClose()}
                     >
                         <Button variant="outline" className="flex-1 flex items-center focus-visible:ring-0 cursor-pointer">
                             <span className="text-muted-foreground text-sm font-semibold">
