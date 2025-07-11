@@ -12,6 +12,7 @@ import {
   magicLink,
   oneTap,
   twoFactor,
+  anonymous,
 } from "better-auth/plugins";
 import { validator } from "validation-better-auth";
 
@@ -68,6 +69,7 @@ export const auth = betterAuth({
   },
   plugins: [
     nextCookies(),
+    anonymous(),
     twoFactor({
       otpOptions: {
         async sendOTP({ user, otp }) {

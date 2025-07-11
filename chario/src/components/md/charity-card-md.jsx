@@ -46,24 +46,34 @@ function CharityCardMd({ charity, className }) {
             <div className="p-4 pt-1 flex flex-col flex-grow">
                 <h3 className='text-xl font-semibold text-white mb-2 line-clamp-1'>{charity.title}</h3>
                 <p className='text-muted-foreground mb-6 line-clamp-4 text-sm'>{charity.description}</p>
-                <div className="flex flex-col gap-1 mt-auto">
-                    <div className='flex justify-between text-xs'>
-                        <span className='text-zinc-400'>Target</span>
-                        <span className='text-primary font-sm'>
-                            {charity.target} ETH
-                        </span>
+                {/* {(charity.target !== '0' || !charity?.id) ? ( */}
+                {(charity.target !== '0' && charity.target) ? (
+                    <div className="flex flex-col gap-1 mt-auto">
+                        <div className='flex justify-between text-xs'>
+                            <span className='text-zinc-400'>Target</span>
+                            <span className='text-primary font-sm'>
+                                {charity.target} ETH
+                            </span>
+                        </div>
+                        <Progress
+                            value={(charity.amountCollected / charity.target) * 100}
+                            className='h-2 bg-zinc-700'
+                        />
+                        <div className='flex justify-between text-xs'>
+                            <span className='text-zinc-400'>Raised</span>
+                            <span className=' font-sm text-emerald-400'>
+                                {charity.amountCollected} ETH
+                            </span>
+                        </div>
                     </div>
-                    <Progress
-                        value={charity.amountCollected / charity.target}
-                        className='h-2 bg-zinc-700'
-                    />
-                    <div className='flex justify-between text-xs'>
+                ) : (
+                    <div className='flex justify-between text-xs mt-auto'>
                         <span className='text-zinc-400'>Raised</span>
-                        <span className='text-primary font-sm'>
+                        <span className='text-emerald-400 font-sm'>
                             {charity.amountCollected} ETH
                         </span>
                     </div>
-                </div>
+                )}
             </div>
         </Link>
     )

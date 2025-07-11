@@ -12,7 +12,7 @@ import {
     SidebarMenuItem,
     SidebarRail,
 } from '@/components/ui/sidebar'
-import { HandHelping, HandHelpingIcon, HeartHandshakeIcon, HeartIcon, LifeBuoyIcon, Plus, PlusIcon } from 'lucide-react'
+import { HandHelping, HandHelpingIcon, HeartHandshakeIcon, HeartIcon, LifeBuoyIcon, Plus, PlusIcon, UserIcon } from 'lucide-react'
 import Link from 'next/link'
 import Settings from '../lg/auth/settings'
 import SignOut from '../lg/auth/sign-out'
@@ -22,7 +22,7 @@ import { Button } from '../ui/button'
 export default function AppSidebar() {
 
     const { data } = useSession();
-
+    // Да, можно лучше это сделать
     return (
         <Sidebar className={'flex flex-col'}>
             <div>
@@ -32,12 +32,6 @@ export default function AppSidebar() {
                         Chario
                     </p>
                 </div>
-                <Link href='/home/charities/new'>
-                    <SidebarItem
-                        label='New charity'
-                        icon={<PlusIcon size={20} />}
-                    />
-                </Link>
                 <Link href='/home/charities'>
                     <SidebarItem
                         label='All charities'
@@ -50,10 +44,22 @@ export default function AppSidebar() {
                         icon={<HeartHandshakeIcon size={20} />}
                     />
                 </Link>
-                <Link href={`/home/donations/${''}`}>
+                <Link href={`/home/charities/me/donations`}>
                     <SidebarItem
                         label='My donations'
                         icon={<HeartIcon size={20} />}
+                    />
+                </Link>
+                <Link href={`/home/profile`}>
+                    <SidebarItem
+                        label='My profile'
+                        icon={<UserIcon size={20} />}
+                    />
+                </Link>
+                <Link href='/home/charities/new'>
+                    <SidebarItem
+                        label='New charity'
+                        icon={<PlusIcon size={20} />}
                     />
                 </Link>
             </div>
@@ -69,12 +75,16 @@ export default function AppSidebar() {
                         <Settings />
                         <SignOut />
                         <div className='flex flex-row border-t border-input p-2  items-center w-full mt-3 '>
-                            <div className='overflow-hidden w-8 h-8 max-h-8 max-w-8 rounded-md'>
-                                <img src={data?.user?.image} alt={data?.user?.name} className='w-full h-full object-cover' />
-                            </div>
+                            {!data?.user?.email?.startsWith('temp-') && (
+                                <div className='overflow-hidden w-8 h-8 max-h-8 max-w-8 rounded-md'>
+                                    <img src={data?.user?.image} alt={data?.user?.name} className='w-full h-full object-cover' />
+                                </div>
+                            )}
                             <div className='flex flex-col ml-3'>
                                 <p className='text-sm font-semi'>{data?.user?.name}</p>
-                                <p className='text-xs text-muted-foreground/75'>{data?.user?.email}</p>
+                                {!data?.user?.email?.startsWith('temp-') && (
+                                    <p className='text-xs text-muted-foreground/75 line-clamp-1'>{data?.user?.email}</p>
+                                )}
                             </div>
                         </div>
                     </div>

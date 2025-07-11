@@ -3,6 +3,7 @@ import "./globals.css";
 import { Providers } from "@/providers/web3";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { Toaster } from "sonner";
+import ModalProvider from "@/providers/modal-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,6 +35,7 @@ export default function RootLayout({ children }) {
           <Providers>
             {children}
             <Toaster />
+            <ModalProvider />
           </Providers>
         </ThemeProvider>
       </body>

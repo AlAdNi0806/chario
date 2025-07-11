@@ -60,7 +60,7 @@ function CreateCharityPage() {
             image: `${process.env.NEXT_PUBLIC_IPFS_GATEWAY}/${watchForm.image.file_cid}`,
             userId: userData.user.id
         });
-        if (result.error) {
+        if (result?.error && result?.walletError) {
             toast.error(result.error);
         } else {
             toast.success("Charity created successfully \n Your charity will be visible on the home page shortly");
@@ -69,7 +69,7 @@ function CreateCharityPage() {
     }
 
     return (
-        <div className="p-8 pt-10">
+        <div className="p-2 md:p-6 lg:p-8 pt-10">
             <p className='text-2xl font-semibold mb-1 '>
                 Specify the file you want to analyze
             </p>

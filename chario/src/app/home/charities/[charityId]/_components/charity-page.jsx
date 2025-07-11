@@ -4,14 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useChario } from '@/hooks/use-chario';
 import { createReconnectingEventSource } from '@/hooks/use-sse';
-import { useSession } from '@/lib/auth-client';
-import { cn } from '@/lib/utils';
-import { HandCoinsIcon, Loader2Icon } from 'lucide-react';
+import { authClient, useSession } from '@/lib/auth-client';
+import { addEthAmounts, cn, sleep } from '@/lib/utils';
+import { CheckIcon, HandCoinsIcon, Loader2Icon, QrCodeIcon, UserIcon } from 'lucide-react';
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react'
 import { toast } from 'sonner';
 import { format } from 'date-fns'
 import Link from 'next/link';
+import { FaQuestion } from 'react-icons/fa';
+import { Progress } from '@/components/ui/progress';
+import { useModal } from '@/hooks/use-modal-store';
 
 function CharityPage({ charity: rawCharity }) {
   const { data: userData } = useSession();
@@ -21,20 +24,34 @@ function CharityPage({ charity: rawCharity }) {
   const [donations, setDonations] = useState([]);
   const [amountToDonate, setAmountToDonate] = useState();
   const [isDonating, setIsDonating] = useState(false);
+  const [totalCollected, setTotalCollected] = useState(0);
 
   useEffect(() => {
     const newCharity = JSON.parse(rawCharity)
+
     setCharity(newCharity)
     setDonations(newCharity.donations)
+    setTotalCollected(newCharity.amountCollected)
+
     const sse = createReconnectingEventSource(`http://localhost:3001/sse/charities/${newCharity.id}/donations`, {
+
       onOpen: () => console.log('Connected to SSE'),
+
       onMessage: (e) => console.log('Message:', e.data),
+
       onError: (e) => console.error('Error:', e),
+
       onEvent: {
         'new-donation': (e) => {
           const data = JSON.parse(e.data)
           console.log('New charity event:', data.donation);
+
           setDonations((prevDonations) => [data.donation, ...prevDonations])
+          setTotalCollected(prev => {
+            const amountFloat = data.donation.amountEth || 0;
+            const total = addEthAmounts(prev, amountFloat);
+            return total;
+          });
         }
       },
       onStatusChange: (status) => setRealtime(status === 1 ? true : false)
@@ -47,20 +64,34 @@ function CharityPage({ charity: rawCharity }) {
   }, [rawCharity])
 
   async function onDonate() {
-    if (!amountToDonate || isNaN(amountToDonate) || amountToDonate <= 0) {
-      toast.error('Invalid amount');
-      return;
-    }
-    const result = await donateToCharity(charity.id, amountToDonate, userData.user.id);
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      toast.success('Donation successful');
+    setIsDonating(true);
+    try {
+      if (!amountToDonate || isNaN(amountToDonate) || amountToDonate <= 0) {
+        toast.error('Invalid amount');
+        return;
+      }
+      let userId = userData?.user?.id;
+      if (userId === null || userId === "" || userId === undefined) {
+        const data = await authClient.signIn.anonymous()
+        userId = data.data.user.id;
+      }
+      const result = await donateToCharity(charity.id, amountToDonate, userId);
+      await sleep(1000)
+      console.log("Donation result:", result)
+      if (result?.error && result?.walletError) {
+        toast.error(result.error);
+      }
+    } catch (error) {
+      console.log(error)
+      setIsDonating(false);
+      toast.error("Something went wrong");
+    } finally {
+      setIsDonating(false);
     }
   }
 
   return (
-    <div className='p-8 pt-10'>
+    <div className='p-2 md:p-6 lg:p-8 pt-10'>
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
         <div className='flex flex-col'>
           <div className="relative w-full h-80 rounded-xl overflow-hidden ring ring-border mb-4">
@@ -72,9 +103,18 @@ function CharityPage({ charity: rawCharity }) {
               style={{ objectFit: 'cover' }}
             />)}
           </div>
-          <h2 className='text-2xl font-bold mb-5'>
-            {charity?.title}
-          </h2>
+          <div className='flex justify-between items-center'>
+            <h2 className='text-2xl font-bold mb-5 line-clamp-2'>
+              {charity?.title}
+            </h2>
+            <div className='flex gap-2 items-center -mt-2 text-lg font-semibold'>
+              {charity?.owner?.name}
+              {charity?.owner && (<Avatar
+                isAnonymousUser={false}
+                user={charity?.owner}
+              />)}
+            </div>
+          </div>
           <div className='flex flex-row gap-4 mb-3'>
             <input
               className={cn(
@@ -83,12 +123,13 @@ function CharityPage({ charity: rawCharity }) {
               )}
               type="number"
               placeholder='0.00'
+              step={0.001}
               value={amountToDonate}
               onChange={(e) => setAmountToDonate(e.target.value)}
               disabled={isDonating}
             />
             <Button
-              className='w-max cursor-pointer h-8'
+              className='w-max cursor-pointer '
               disabled={isDonating}
               onClick={onDonate}
             >
@@ -98,15 +139,39 @@ function CharityPage({ charity: rawCharity }) {
                 'Donate'
               )}
             </Button>
+            {/* <Button
+            >
+              <QrCodeIcon />
+            </Button> */}
           </div>
+          <p>
+            {charity?.ownerWallet}
+          </p>
           <p className='text-muted-foreground text-sm mb-8'>
             {charity?.description}
           </p>
         </div>
-        <Donations
-          donations={donations}
-          realtime={realtime}
-        />
+        <div>
+          <Donations
+            donations={donations}
+            realtime={realtime}
+            totalCollected={totalCollected}
+          />
+          {(charity?.target !== '0' && charity?.target) && (
+            <div className="flex flex-col gap-1 mt-6">
+              <Progress
+                value={(totalCollected / charity.target) * 100}
+                className='h-2 bg-zinc-700'
+              />
+              <div className='flex justify-between text-xs'>
+                <span className='text-zinc-400'>Target</span>
+                <span className='text-primary font-sm'>
+                  {charity.target} ETH
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -114,19 +179,21 @@ function CharityPage({ charity: rawCharity }) {
 
 export default CharityPage
 
-function Donations({ donations, realtime }) {
+function Donations({ donations, realtime, totalCollected }) {
   return (
     <div className='flex flex-col gap-1 bg-card rounded-3xl p-4 py-3 ring-1 ring-card-foreground/10 border-4 border-card/40 h-max'>
       <div className='flex flex-row justify-between items-center '>
-        <h2 className='text-xl font-semibold mb-4'>
-          Donations
-        </h2>
+        <div className='flex items-center'>
+          <h2 className='text-xl font-semibold mb-4'>
+            Donations - <span className='text-emerald-400'>{totalCollected} ETH</span>
+          </h2>
+        </div>
         <RealtimeIndicator
           realtime={realtime}
           className='-top-4 right-3'
         />
       </div>
-      <div className='ring ring-input rounded-md'>
+      <div className='ring ring-input rounded-md max-h-[400px] overflow-y-auto'>
         {donations?.length > 0 ? (
           <div className='flex flex-col '>
             {donations.map((donation, index) => (
@@ -147,16 +214,21 @@ function Donations({ donations, realtime }) {
 }
 
 function Donation({ donation, isLastItem }) {
+  // console.log("Donation:", donation)
+  const { onOpen } = useModal()
   return (
-    <div className={cn('flex items-center justify-between gap-2 py-3 pr-4 px-2', !isLastItem && 'border-b border-accent')}>
+    <div
+      className={cn('flex items-center justify-between gap-2 py-3 pr-4 px-2 hover:bg-accent cursor-pointer', !isLastItem && 'border-b border-accent')}
+      onClick={() => onOpen('donationAction', { donation })}
+    >
       <div className='flex gap-2 items-center'>
-        <SenderAvatar isAnonymousUser={!!donation.donorAnonymousUser} user={donation.donorUser || donation.donorAnonymousUser} />
+        <Avatar isAnonymousUser={donation?.donorUser?.isAnonymous} user={donation?.donorUser} />
         <div >
           <Link
             href={`/home/charities/${donation.charityId}`}
           >
             <p className='text-md'>
-              {`${donation.senderWallet.substring(0, 12)}...${donation.senderWallet.substring(34)}`}
+              {`${donation.txHash.substring(0, 8)}...${donation.txHash.substring(donation.txHash.length - 6, donation.txHash.length)}`}
               {/* {donation.senderWallet} */}
             </p>
           </Link>
@@ -165,23 +237,40 @@ function Donation({ donation, isLastItem }) {
           </p>
         </div>
       </div>
-      <p className='text-emerald-300'>
+      <p className='text-emerald-500 dark:text-emerald-300'>
         {donation.amountEth} ETH
       </p>
     </div>
   )
 }
 
-function SenderAvatar({ user, isAnonymousUser }) {
-  console.log("SenderAvatar:", user)
+function Avatar({ user, isAnonymousUser }) {
+  // console.log("SenderAvatar:", user)
   return (
-    <div className='w-10 h-10 rounded-full overflow-hidden bg-accent flex items-center justify-center'>
+    <div className={cn(
+      'min-w-8 min-h-8 w-8 h-8 max-w-8 max-h-8 lg:w-10 lg:h-10 lg:max-w-10 lg:max-h-10 rounded-full bg-accent flex items-center justify-center relative',
+      !isAnonymousUser && user.verifiedLevel !== 0 && 'p-[4px] ring-1',
+      {
+        ' ring-yellow-300': !isAnonymousUser && user.verifiedLevel === 1,
+        ' ring-green-300': !isAnonymousUser && user.verifiedLevel === 2,
+        ' ring-blue-300': !isAnonymousUser && user.verifiedLevel === 3,
+        ' ring-gray-300': !isAnonymousUser && user.verifiedLevel === 4,
+      }
+    )}>
       {isAnonymousUser ? (
-        <div className='w-full h-full rounded-full bg-muted-foreground flex items-center justify-center'>
-          <UserIcon size={18} className='text-primary rotate-180' />
+        <div className='relative w-full h-full rounded-full bg-card flex items-center justify-center'>
+          <UserIcon size={18} className='text-primary' />
+          <FaQuestion className='absolute top-0.5 right-0.5 text-primary text-[8px]' />
         </div>
       ) : (
-        <img src={user?.image} alt={'user'} className='w-full h-full object-cover' />
+        <div className='relative w-full h-full rounded-full overflow-hidden bg-card flex items-center justify-center'>
+          <img src={user?.image} alt={'user'} className='w-full h-full object-cover' />
+        </div>
+      )}
+      {user.verifiedLevel === 4 && (
+        <div className='absolute -top-1 -right-1 p-1 bg-gray-700 rounded-full'>
+          <CheckIcon size={12} className='text-white' />
+        </div>
       )}
     </div>
   )

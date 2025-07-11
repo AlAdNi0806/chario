@@ -10,7 +10,7 @@ async function Page() {
     headers: await headers()
   });
 
-  if (!sessionData?.session) {
+  if (!sessionData?.session || sessionData?.user?.email?.startsWith('temp-')) {
     return <NotAuthenticated />
   }
 

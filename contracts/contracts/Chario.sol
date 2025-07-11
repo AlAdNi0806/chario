@@ -171,28 +171,15 @@ contract Chario is ReentrancyGuard {
             "Charity is not active and cannot receive donations"
         );
 
-        // Check deadline if it exists and is in the past
-        if (charity.deadline != 0) {
-            require(
-                block.timestamp <= charity.deadline,
-                "Charity campaign has ended"
-            );
-        }
-
-        // Check if target is met if it exists
-        if (charity.target != 0) {
-            require(
-                charity.amountCollected < charity.target,
-                "Charity target has been reached"
-            );
-        }
-
         // Update tracking data
         charity.amountCollected += msg.value;
         donorContributions[_id][msg.sender] += msg.value;
 
-        // Immediately send funds to the main contract owner
-        (bool sent, ) = payable(owner).call{value: msg.value}("");
+        console.log("Charity owner:", charity.owner);
+        console.log("Donor:", msg.sender);
+
+        // Immediately send funds to the charity owner
+        (bool sent, ) = payable(charity.owner).call{value: msg.value}("");
         require(sent, "Failed to send Ether to the owner");
 
         emit DonationReceived(_id, msg.sender, msg.value, _userId);

@@ -489,7 +489,7 @@ const FileItem = memo(({ file, uploadProgress, cancelUpload, deleteFile, handleR
                     )}
                     <div>
                         <p className='font-medium '>
-                            {file?.file_name}
+                            {file?.file_name.substring(0, 5)}{file?.file_name.substring(file?.file_name.length - 5, file?.file_name.length)}
                         </p>
                         {!file?.failed ? (
                             <p className='text-xs text-neutral-500'>

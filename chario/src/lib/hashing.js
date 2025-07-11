@@ -1,14 +1,16 @@
-import Hashids from 'hashids'
 
-const hashids = new Hashids('my-unique-salt', 10)
 
 export function maskId(id) {
-    return hashids.encode(id)
+    const str = id.toString();
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+        (_, p1) => String.fromCharCode('0x' + p1)
+    )).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-export function unmaskId(maskedId) {
-    const decoded = hashids.decode(maskedId)
-    // if (decoded.length === 0) throw new Error('Invalid ID')
-    if (decoded.length === 0) return null
-    return decoded[0]
+export function unmaskId(encoded) {
+    encoded = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    const str = atob(encoded);
+    return decodeURIComponent(str.split('').map(c =>
+        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+    ).join(''));
 }

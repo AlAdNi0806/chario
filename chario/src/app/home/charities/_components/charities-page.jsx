@@ -34,7 +34,7 @@ function CharitiesPage({ charities: initialCharities }) {
 
     return (
         <div className='w-full h-full p-8 gap-8 flex flex-col items-center relative overflow-x-hidden '>
-            <div className='absolute top-13 left-6 w-full h-full'>
+            {/* <div className='absolute top-13 left-6  bg-red-500'>
                 <div className='relative'>
                     <div
                         className={cn(
@@ -54,20 +54,38 @@ function CharitiesPage({ charities: initialCharities }) {
                         )}
                     />
                 </div>
-            </div>
+            </div> */}
             <SearchBar />
-            <div className='max-w-[1200px] w-full flex flex-col justify-center mx-auto flex-grow'>
-                <h2>Active Charities ({charities?.length} total)</h2>
+            <div className='max-w-[1200px] w-full flex flex-col justify-center mx-auto'>
+                <div className='flex gap-4 mb-6'>
+                    <h2 className='text-muted-foreground'>Active Charities ({charities?.length} total)</h2>
+                    <div className='relative mt-1'>
+                        <div
+                            className={cn(
+                                'absolute bg-black bg-opacity-50 z-10 h-2 w-2 rounded-full',
+                                realtime ? 'bg-emerald-500' : 'bg-yellow-500'
+                            )}
+                        />
+                        <div
+                            className={cn(
+                                'absolute bg-black bg-opacity-50 z-0 h-6 w-6 rounded-full',
+                                'animate-pulse-fade-out',
+                                '-top-2 -left-2', // This positioning might need slight adjustment based on your h-4/w-4
+                                realtime ? 'bg-emerald-500' : 'bg-yellow-500'
+                            )}
+                        />
+                    </div>
+                </div>
                 {/* <div>
                     {isConnected ? "SSE Connected" : "Connecting..."}
                 </div> */}
-                <div className='flex flex-wrap justify-center gap-6'>
+                <div className='flex flex-wrap justify-center gap-6 mt-4'>
                     {charities.map(charity => (
-                        <CharityCard key={charity.id} charityId={charity.id} />
+                        <CharityCard key={charity.id} charityId={charity.id} charity={charity} />
                     ))}
                 </div>
             </div>
-            <div className='min-h-[400px]' />
+            {/* <div className='min-h-[400px]' /> */}
         </div>
     );
 }
@@ -75,15 +93,15 @@ function CharitiesPage({ charities: initialCharities }) {
 export default CharitiesPage
 
 
-function CharityCard({ charityId }) {
-    const { charity, donorContribution, isOwner, canRefund, refetchAll } = useCharity(charityId);
+function CharityCard({ charityId, charity }) {
+    // const { charity, donorContribution, isOwner, canRefund, refetchAll } = useCharity(charityId);
     const { donateToCharity, withdrawFunds, refundDonation, formatEther, parseEther } = useChario();
     const { statusText, statusColor, isActive } = useCharityStatus(charity?.status);
 
-    const handleDonate = async () => {
-        await donateToCharity(charityId, "0.1");
-        refetchAll(); // Refresh data after donation
-    };
+    // const handleDonate = async () => {
+    //     await donateToCharity(charityId, "0.1");
+    //     refetchAll(); // Refresh data after donation
+    // };
 
     return (
         <CharityCardMd
@@ -92,8 +110,8 @@ function CharityCard({ charityId }) {
                 id: maskId(charityId),
                 title: charity?.title,
                 description: charity?.description,
-                target: formatEther(charity?.target || 0),
-                amountCollected: formatEther(charity?.amountCollected || 0),
+                target: charity?.target || '0',
+                amountCollected: charity?.amountCollected,
                 image: charity?.image,
             }}
         />

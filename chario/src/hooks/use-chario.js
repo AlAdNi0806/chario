@@ -395,9 +395,9 @@ export const useChario = () => {
     // Helper function to execute contract writes
     const executeWrite = useCallback(async (functionName, args, value, loadingMessage) => {
         if (!isConnected) {
-            // toast.error('Please connect your wallet first.');
             return {
-                error: 'Please connect your wallet first.'
+                error: 'Please connect your wallet first.',
+                walletError: true
             };
         }
         setIsLoading(true);
@@ -442,12 +442,13 @@ export const useChario = () => {
      */
     const donateToCharity = useCallback(async (charityId, amount, userId) => {
         const amountInWei = parseEther(amount.toString());
-        await executeWrite(
+        const result = await executeWrite(
             'donateToCharity',
             [charityId, userId],
             amountInWei,
             'Processing your donation...'
         );
+        return result
     }, [executeWrite]);
 
     /**
@@ -462,6 +463,8 @@ export const useChario = () => {
             undefined,
             'Updating charity status...'
         );
+
+        return result
     }, [executeWrite]);
 
     return {

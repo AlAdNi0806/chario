@@ -3,10 +3,11 @@ import { Hono } from 'hono'
 import { ethers } from 'ethers'
 import { streamSSE } from 'hono/streaming'
 import { cors } from 'hono/cors'
+import { serve } from '@hono/node-server'
 import { prisma } from './db.js'
 import { donationEmitter, emitNewDonation, emitNewCharity } from './events.js'
 import getCurrentEthPrice from './ethPrice.js'
-import abi from '../abi/chario.json'
+import abi from '../abi/chario.json' with { type: 'json' };
 
 const app = new Hono()
 
@@ -21,18 +22,18 @@ app.use('*', cors({
 
 
 async function setupBlockchainListeners() {
-    const provider = new ethers.JsonRpcProvider('http://localhost:8545')
-    const contractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
+    const provider = new ethers.WebSocketProvider(process.env.JSON_RPC_URL);
+    const contractAddress = process.env.CONTRACT_ADDRESS;
     const contract = new ethers.Contract(contractAddress, abi, provider)
 
-    contract.on('*', (event) => {
-        console.log('--- Received ANY contract event ---');
-        console.log('Event Name:', event.eventName);
-        console.log('Event Args:', event.args.toObject());
-        console.log('Transaction Hash:', event.log.transactionHash);
-        console.log('Block Number:', event.log.blockNumber);
-        console.log('---------------------------------');
-    });
+    // contract.on('*', (event) => {
+    //     console.log('--- Received ANY contract event ---');
+    //     console.log('Event Name:', event.eventName);
+    //     console.log('Event Args:', event.args.toObject());
+    //     console.log('Transaction Hash:', event.log.transactionHash);
+    //     console.log('Block Number:', event.log.blockNumber);
+    //     console.log('---------------------------------');
+    // });
 
     contract.on('DonationReceived', async (charityId, donor, amount, userId, event) => {
         console.log("DONATION RECEIVED EVENT TRIGGERED!");
@@ -55,10 +56,7 @@ async function setupBlockchainListeners() {
             });
 
 
-            const user = await prisma.user.findUnique({
-                where: { id: userId }
-            });
-            const anonymousUser = await prisma.anonymousUser.findUnique({
+            const user = await prisma.user.findFirst({
                 where: { id: userId }
             });
             let donationData = {
@@ -67,39 +65,32 @@ async function setupBlockchainListeners() {
                 amountUsd: amountUsd,
                 txHash: event.log.transactionHash,
                 charityId: charityId.toString(),
+                donorUserId: user.id,
             };
 
+            const currentAmount = user.amountSentInDollars || '0';
+            const newUserSentAmount = parseFloat(currentAmount) + parseFloat(amountUsd);
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { amountSentInDollars: newUserSentAmount.toString() }
+            });
 
-            if (user) {
-                donationData.donorUserId = user.id;
-                const currentAmount = parseFloat(user.amountSentInDollars || '0');
-                const newAmount = parseFloat(amountUsd) + currentAmount;
-                await prisma.user.update({
-                    where: { id: user.id },
-                    data: { amountSentInDollars: newAmount.toString() }
-                });
-            } else if (anonymousUser) {
-                donationData.donorAnonymousUserId = anonymousUser.id;
-                const currentAmount = parseFloat(anonymousUser.amountSentInDollars || '0');
-                const newAmount = parseFloat(amountUsd) + currentAmount;
-                await prisma.anonymousUser.update({
-                    where: { id: anonymousUser.id },
-                    data: { amountSentInDollars: newAmount.toString() }
-                });
-            } else {
-                donationData.donorAnonymousUser = {
-                    create: {
-                        amountSentInDollars: amountUsd
-                    }
-                };
-            }
+            const charity = await prisma.charity.findFirst({
+                where: { id: charityId.toString() },
+            });
+            const newAmount = addEthAmounts(amountEth, charity.amountCollected.toString());
+            await prisma.charity.update({
+                where: { id: charity.id },
+                data: {
+                    amountCollected: newAmount.toString()
+                }
+            })
 
             const donation = await prisma.donation.create({
                 data: donationData,
                 include: {
                     charity: true,
                     donorUser: true,
-                    donorAnonymousUser: true
                 }
             });
 
@@ -241,6 +232,19 @@ function formatDonationForClient(donation) {
     }
 }
 
+export function addEthAmounts(ethAmount1, ethAmount2) {
+    // Convert ETH strings to bigint wei values
+    const wei1 = ethers.parseEther(ethAmount1);
+    const wei2 = ethers.parseEther(ethAmount2);
+
+    // Add the bigint wei amounts using native +
+    const sumWei = wei1 + wei2;
+
+    // Convert back to ETH string
+    return ethers.formatEther(sumWei);
+}
+
+
 function formatCharityForClient(charity) {
     return {
         id: charity.id,
@@ -266,13 +270,18 @@ function formatCharityForClient(charity) {
 async function startApp() {
     await setupBlockchainListeners()
 
-    const port = 3001
-    Bun.serve({
+    // const port = 3001
+    // Bun.serve({
+    //     fetch: app.fetch,
+    //     port,
+    // })
+
+    serve({
         fetch: app.fetch,
-        port,
+        port: 3001,
     })
 
-    console.log(`Hono server running on http://localhost:${port}`)
+    console.log(`Hono server running on http://localhost:${3001}`)
 }
 
 startApp().catch(console.error)

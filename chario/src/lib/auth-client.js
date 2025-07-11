@@ -3,6 +3,7 @@ import { twoFactorClient } from "better-auth/client/plugins";
 import {
   magicLinkClient,
   oneTapClient,
+  anonymousClient 
 } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
@@ -11,6 +12,7 @@ export const authClient = createAuthClient({
   plugins: [
     twoFactorClient(),  
     magicLinkClient(),
+    anonymousClient(),
     oneTapClient({
       clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
     }),

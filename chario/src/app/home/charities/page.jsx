@@ -2,11 +2,14 @@ import React from 'react'
 import CharitiesPage from './_components/charities-page'
 import { prisma } from '@/db'
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
 async function Page() {
 
   const charities = await prisma.charity.findMany({
     orderBy: { createdAt: 'desc' },
-    take: 10,
     include: { owner: true }
   })
 
@@ -21,6 +24,8 @@ async function Page() {
     //   someDecimalField: charity.owner.someDecimalField.toString(),
     // }
   }));
+
+  console.log("Charities:", charitiesForClient)
 
   return (
     <>

@@ -36,6 +36,7 @@ model User {
   username            String?
   verifiedLevel       Int     @default(0)
   amountSentInDollars String?
+  isAnonymous         Boolean? @default(false)
 
   Session   Session[]
   Account   Account[]
